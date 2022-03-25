@@ -13,8 +13,8 @@
 2. Публичная подсеть.
 - Создать в vpc subnet с названием public, сетью 192.168.10.0/24.
 - Создать в этой подсети NAT-инстанс, присвоив ему адрес 192.168.10.254. В качестве image_id использовать fd80mrhj8fl2oe87o4e1
-- Создать в этой публичной подсети виртуалку с публичным IP и подключиться к ней, убедиться что есть доступ к интернету.
-![image](https://user-images.githubusercontent.com/30965391/160131028-212223fd-2138-4284-bb65-8e702de7231d.png)
+- Создать в этой публичной подсети виртуалку с публичным IP и подключиться к ней, убедиться что есть доступ к интернету.  
+![image](https://user-images.githubusercontent.com/30965391/160131028-212223fd-2138-4284-bb65-8e702de7231d.png)  
 
 3. Приватная подсеть.
 - Создать в vpc subnet с названием private, сетью 192.168.20.0/24.
@@ -22,10 +22,143 @@
 - Создать в этой приватной подсети виртуалку с внутренним IP, подключиться к ней через виртуалку, созданную ранее и убедиться что есть доступ к интернету
 ![image](https://user-images.githubusercontent.com/30965391/160132764-453eabd3-a4f2-4834-87c7-d826f1e3e735.png)  
 
-Зашищебродил рам, что бы если что, не быстро рублевые ресурсы кончались)
-![image](https://user-images.githubusercontent.com/30965391/160132935-67fd7b42-835b-498e-8044-35ac5e6d5cc3.png)
+Зашищебродил рам, что бы если что, не быстро рублевые ресурсы кончались)  
+![image](https://user-images.githubusercontent.com/30965391/160132935-67fd7b42-835b-498e-8044-35ac5e6d5cc3.png)  
+
+```
+pixel@kopilka:~/15.1$ cat main.tf
+terraform {
+  required_providers {
+    yandex = {
+      source = "terraform-registry.storage.yandexcloud.net/yandex-cloud/yandex"
+    }
+  }
+  required_version = ">= 0.13"
+}
+*спрятал*
+provider "yandex" {
+  token     = "*спрятал*"
+  cloud_id  = "cloud-*спрятал*"
+  folder_id = "*спрятал*"
+  zone      = "ru-central1-b"
+
+}
+
+resource "yandex_vpc_network" "test_network" {}
+
+resource "yandex_vpc_subnet" "public" {
+  zone           = "ru-central1-b"
+  network_id     = yandex_vpc_network.test_network.id
+  v4_cidr_blocks = ["192.168.10.0/24"]
+  name               = "public"
+}
+
+resource "yandex_vpc_subnet" "private" {
+  zone           = "ru-central1-b"
+  network_id     = yandex_vpc_network.test_network.id
+  v4_cidr_blocks = ["192.168.20.0/24"]
+  name               = "private"
+}
+
+data "yandex_compute_image" "test_image" {
+  image_id = "fd8ni66vim3em9jgua7g"
+}
 
 
+resource "yandex_vpc_route_table" "test-rt-a" {
+  network_id = "${yandex_vpc_network.test_network.id}"
+
+  static_route {
+    destination_prefix = "0.0.0.0/0"
+    next_hop_address   = "192.168.10.254"
+ }
+}
+
+resource "yandex_compute_instance" "test-public" {
+  name               = "test-public"
+ service_account_id = "ajer57ueru2c21ng72lf"
+    platform_id = "standard-v2"
+    resources {
+      memory = 0.5
+      cores  = 2
+      core_fraction = 5
+    }
+    boot_disk {
+      mode = "READ_WRITE"
+      initialize_params {
+      image_id = data.yandex_compute_image.test_image.id
+
+      }
+    }
+    network_interface {
+      subnet_id = "${yandex_vpc_subnet.public.id}"
+      nat = "true"
+    }
+      metadata = {
+      username = "ubuntu"
+      password = "ubuntu"
+      ssh-keys = "ubuntu:${file("pubkey.pem.pub")}"
+    }
+
+}
+
+resource "yandex_compute_instance" "test-private" {
+  name               = "test-private"
+ service_account_id = "ajer57ueru2c21ng72lf"
+    platform_id = "standard-v2"
+    resources {
+      memory = 0.5
+      cores  = 2
+      core_fraction = 5
+    }
+    boot_disk {
+      mode = "READ_WRITE"
+      initialize_params {
+      image_id = data.yandex_compute_image.test_image.id
+
+      }
+    }
+    network_interface {
+      subnet_id = "${yandex_vpc_subnet.private.id}"
+
+    }
+      metadata = {
+      username = "ubuntu"
+      password = "ubuntu"
+      ssh-keys = "ubuntu:${file("pubkey.pem.pub")}"
+    }
+
+}
+
+resource "yandex_compute_instance" "nat-instance" {
+  name               = "nat-instance"
+ service_account_id = "ajer57ueru2c21ng72lf"
+    platform_id = "standard-v2"
+    resources {
+      memory = 0.5
+      cores  = 2
+      core_fraction = 5
+    }
+    boot_disk {
+      mode = "READ_WRITE"
+      initialize_params {
+      image_id = "fd85vbr6kin3r8ro2e95"
+
+      }
+    }
+    network_interface {
+      subnet_id = "${yandex_vpc_subnet.public.id}"
+      nat = "true"
+      ip_address="192.168.10.254"
+    }
+      metadata = {
+      username = "ubuntu"
+      password = "ubuntu"
+      ssh-keys = "ubuntu:${file("pubkey.pem.pub")}"
+    }
+
+}
+```
 Resource terraform для ЯО
 - [VPC subnet](https://registry.terraform.io/providers/yandex-cloud/yandex/latest/docs/resources/vpc_subnet)
 - [Route table](https://registry.terraform.io/providers/yandex-cloud/yandex/latest/docs/resources/vpc_route_table)
