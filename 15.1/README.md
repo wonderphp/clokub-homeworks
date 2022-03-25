@@ -14,10 +14,17 @@
 - Создать в vpc subnet с названием public, сетью 192.168.10.0/24.
 - Создать в этой подсети NAT-инстанс, присвоив ему адрес 192.168.10.254. В качестве image_id использовать fd80mrhj8fl2oe87o4e1
 - Создать в этой публичной подсети виртуалку с публичным IP и подключиться к ней, убедиться что есть доступ к интернету.
+![image](https://user-images.githubusercontent.com/30965391/160131028-212223fd-2138-4284-bb65-8e702de7231d.png)
+
 3. Приватная подсеть.
 - Создать в vpc subnet с названием private, сетью 192.168.20.0/24.
 - Создать route table. Добавить статический маршрут, направляющий весь исходящий трафик private сети в NAT-инстанс
 - Создать в этой приватной подсети виртуалку с внутренним IP, подключиться к ней через виртуалку, созданную ранее и убедиться что есть доступ к интернету
+![image](https://user-images.githubusercontent.com/30965391/160132764-453eabd3-a4f2-4834-87c7-d826f1e3e735.png)  
+
+Зашищебродил рам, что бы если что, не быстро рублевые ресурсы кончались)
+![image](https://user-images.githubusercontent.com/30965391/160132935-67fd7b42-835b-498e-8044-35ac5e6d5cc3.png)
+
 
 Resource terraform для ЯО
 - [VPC subnet](https://registry.terraform.io/providers/yandex-cloud/yandex/latest/docs/resources/vpc_subnet)
